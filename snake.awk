@@ -13,12 +13,16 @@ BEGIN {
     print "\x1b[?25l"
 
     # Init grid variable with map
-    init_grid(grid)
+    #
+    init_grid(tail_grid)
 
     #
-    player["head"] = 10
+    player["x"] = 10
+    player["y"] = 10
     player["length"] = 1
-    grid[5,10] = 1
+
+    fruit["x"] = 2
+    fruit["y"] = 2
 
 
     # initial render of the screen
@@ -29,18 +33,20 @@ BEGIN {
         input = get_input()
 
         if (input == "w")
-            player["row"]--
+            player["x"]--
         if (input == "s") 
-            player["row"]++
+            player["x"]++
         if (input == "a")
-            player["column"]--
+            player["y"]--
         if (input == "d")
-            player["column"]++
+            player["y"]++
 
         # Exit gracefully (so that END is run)
         if (input == "q")
             exit
         
+        #
+        update_length()
         render_screen()
     }
 }
@@ -63,7 +69,7 @@ function init_grid(grid) {
 #
 # ===
 function get_input() {
-    command = "read -n 1; echo $REPLY" 
+    command = "read -s -n 1; echo $REPLY" 
     command | getline input
     close(command)
 
@@ -73,24 +79,40 @@ function get_input() {
 # ===
 #
 # ===
+function update_length() {
+    if (player["x"] == fruit["x"] && player["y"] == fruit["y"])
+        player["length"]++
+        fruit["x"] = 10
+        fruit["y"] = 10
+}
+
+# ===
+#
+# ===
 function render_screen() {
     print "\x1b[0;0H\x1b[J"
 
-    for(position in grid) {
+    move_cursor = "\x1b[" row ";" column "H"
+
+    for(position in tail_grid) {
         #
         split(position, coords, SUBSEP)
         row = coords[1]
         column = coords[2]
 
-        move_cursor = "\x1b[" row ";" column "H"
 
-        if (grid[row,column] == 1)
-            print move_cursor "X"
-        else if (grid[row,column] == 2)
+        if (row == player["x"] && column == player["y"])
             print move_cursor "O"
+        
+        if (tail_grid[row,column] == 1)
+            print move_cursor "o"
         else
             print move_cursor "_"
     }
+
+    row = player["x"]
+    column = player["y"]
+    print move_cursor "O"
 
     # reset cursor to orignal position
     print "\x1b[0;0H"
