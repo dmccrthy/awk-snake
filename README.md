@@ -1,1 +1,2 @@
-# awk-snake
+# Snake (made in AWK)
+
