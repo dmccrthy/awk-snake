@@ -4,8 +4,10 @@ This project is an exercise in making things work even when they probably should
 
 ## Requirements*
 
-- awk
-- bash
+- GNU Awk (v5.3.1)
+- Bash (v5.2.37)
+
+*These are the versions I used while testing. Support for others may vary (especially if you aren't using GNU Awk).*
 
 ## Playing the Game
 

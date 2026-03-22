@@ -3,31 +3,37 @@
 # snake.awk - A snake game written in AWK
 #
 # Description:
-#   ... 
+#   This is my take on Snake implemented in the AWK programming
+#   language. This isn't intended to be good or even fun but instead
+#   a test to see if its possible.
 #
 # Author: Dan McCarthy
 # Date: 3/16/2026
 
 BEGIN {
-    # disable terminal cursor
-    print "\x1b[?25l"
+    # disable terminal cursor and print header messages
+    print "\x1b[?25l" 
+    print "\x1b[0;0H\x1b[J" "PRESS 'q' TO EXIT ---- WASD TO MOVE"
 
     #
     GRID_HEIGHT = 10
     GRID_WIDTH = 20
+    GRID_OFFSET = 3
 
-    # Init grid variable with map
-    # tracks position of trailing 
-    init_grid(tail_grid)
+    # QUEUE is a global var that tracks coordinates of the players tail segments
+    # QUEUE_START/END track the index of elements in queue (as internally it uses an array)
+    QUEUE_START = 0
+    QUEUE_END = 0
 
-    #
-    player["x"] = 10
+    # MAP tracks which tiles the snake is in (when rendering)
+    init_grid(MAP)
+
+    # player is an array that tracks 
+    player["x"] = 5
     player["y"] = 10
-    player["direction"] = "w"
     player["length"] = 0
 
     generate_fruit(fruit)
-
 
     # initial render of the screen
     render_screen()
@@ -37,6 +43,7 @@ BEGIN {
         input = get_input()
 
         if (input ~ "[wasd]") {
+            # previous location needs to be tracked so we can update MAP
             prev["x"] = player["x"]
             prev["y"] = player["y"]
 
@@ -52,22 +59,24 @@ BEGIN {
             # check_collision()
 
             if (player["x"] == fruit["x"] && player["y"] == fruit["y"]) {
-                #
                 update_length(prev)
                 generate_fruit(fruit)
             } else {
+                split(player["tail"], coords, ",")
 
+                # set the last position to tail and remove last tail index
+                MAP[prev["x"], prev["y"]] = 1
+                MAP[coords[1], coords[2]] = 0
+
+                update_tail(coords)
             }
         }
 
-
         # Exit gracefully (so that END is run)
-        if (input == "q")
-            exit
-        
-        #
-        #update_length()
+        if (input == "q") exit
+
         render_screen()
+        debug(player["tail"])
     }
 }
 
@@ -82,8 +91,20 @@ function init_grid(grid) {
     }
 }
 
+function enqueue(value) {
+    QUEUE[QUEUE_START] = value
+    QUEUE_START++
+}
+
+function dequeue() {
+    QUEUE_TMP = QUEUE[QUEUE_END]
+    delete QUEUE[QUEUE_END]
+
+    return QUEUE[QUEUE_END++]
+}
+
 # ===
-#
+# 
 # ===
 function get_input() {
     command = "read -n 1; echo $REPLY" 
@@ -91,6 +112,10 @@ function get_input() {
     close(command)
 
     return input
+}
+
+function debug(var) {
+    print "\x1b[0;0H" var
 }
 
 # ===
@@ -101,11 +126,14 @@ function get_input() {
 #   y - Column of cursor
 # ===
 function update_cursor(x, y) {
-    return "\x1b[" x ";" y "H"
+    return "\x1b[" x+GRID_OFFSET ";" y "H"
 }
 
 # ===
+# Regenerate the fruit at a random location within the map.
 #
+# Parameters:
+#   fruit - the fruit object (with x/y coords)
 # ===
 function generate_fruit(fruit) {
     fruit["x"] = int(rand() * 10)
@@ -115,21 +143,37 @@ function generate_fruit(fruit) {
 # ===
 #
 # ===
-function update_length() {
-    if (player["x"] == fruit["x"] && player["y"] == fruit["y"]) {
-        # player["length"]++
-        # fruit["x"] = 10
-        # fruit["y"] = 10
-    }
+function update_length(location) {
+    player["length"]++
+    MAP[location["x"], location["y"]] = 1
+}
+
+# ===
+#
+#
+# Parameters:
+#   prev - the previous tail coordinates
+# ===
+function update_tail(prev) {
+    # TODO: change to a switch
+    if (player["direction"] == "w")
+        player["tail"] = prev[1]+1 "," prev[2]
+    if (player["direction"] == "s") 
+        player["tail"] = prev[1]-1 "," prev[2]
+    if (player["direction"] == "a")
+        player["tail"] = prev[1] "," prev[2]-1
+    if (player["direction"] == "d")
+        player["tail"] = prev[1] "," prev[2]+1
+
+    if (player["length"] == 0)
+        player["tail"] = player["x"] "," player["y"]
 }
 
 # ===
 #
 # ===
 function render_screen() {
-    print "\x1b[0;0H\x1b[J"
-
-    for(position in tail_grid) {
+    for(position in MAP) {
         #
         split(position, coords, SUBSEP)
         row = coords[1]
@@ -139,7 +183,7 @@ function render_screen() {
 
         if (row == player["x"] && column == player["y"]) {
             print move_cursor "O"
-        } else if (tail_grid[row,column] == 1) {
+        } else if (MAP[row,column] == 1) {
             print move_cursor "o"
         } else {
             print move_cursor "_"
