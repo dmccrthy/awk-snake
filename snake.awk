@@ -44,8 +44,8 @@ BEGIN {
 
         if (input ~ "[wasd]") {
             # previous location needs to be tracked so we can update MAP
-            prev["x"] = player["x"]
-            prev["y"] = player["y"]
+            x = player["x"]
+            y = player["y"]
 
             if (input == "w")
                 player["x"]--
@@ -59,16 +59,14 @@ BEGIN {
             # check_collision()
 
             if (player["x"] == fruit["x"] && player["y"] == fruit["y"]) {
-                update_length(prev)
+                update_length(x, y)
                 generate_fruit(fruit)
             } else {
-                split(player["tail"], coords, ",")
+                MAP[x, y] = 1
+                enqueue(x, y)
 
-                # set the last position to tail and remove last tail index
-                MAP[prev["x"], prev["y"]] = 1
-                MAP[coords[1], coords[2]] = 0
-
-                update_tail(coords)
+                dequeue()
+                MAP[QUEUE_TMP[1], QUEUE_TMP[2]] = 0
             }
         }
 
@@ -76,7 +74,6 @@ BEGIN {
         if (input == "q") exit
 
         render_screen()
-        debug(player["tail"])
     }
 }
 
@@ -91,20 +88,30 @@ function init_grid(grid) {
     }
 }
 
-function enqueue(value) {
-    QUEUE[QUEUE_START] = value
+function enqueue(x, y) {
+    QUEUE[QUEUE_START] = x "," y
     QUEUE_START++
+
+    # debug(x, y)
 }
 
 function dequeue() {
-    QUEUE_TMP = QUEUE[QUEUE_END]
-    delete QUEUE[QUEUE_END]
+    split(QUEUE[QUEUE_END], QUEUE_TMP, ",")
+    delete QUEUE[QUEUE_END++]
 
-    return QUEUE[QUEUE_END++]
+    debug(QUEUE_TMP[1] QUEUE_TMP[2])
+
+    #
+}
+
+function debug(var1, var2) {
+    print "\x1b[" LINE_ROW ";30H" var1 " " var2
+    LINE_ROW++
 }
 
 # ===
-# 
+# Read and return input from stdin. This reads the next input 
+# character and returns it (this is used to handle player movement)
 # ===
 function get_input() {
     command = "read -n 1; echo $REPLY" 
@@ -112,10 +119,6 @@ function get_input() {
     close(command)
 
     return input
-}
-
-function debug(var) {
-    print "\x1b[0;0H" var
 }
 
 # ===
@@ -143,9 +146,10 @@ function generate_fruit(fruit) {
 # ===
 #
 # ===
-function update_length(location) {
+function update_length(x, y) {
     player["length"]++
-    MAP[location["x"], location["y"]] = 1
+    MAP[x, y] = 1
+    enqueue(x, y)
 }
 
 # ===
@@ -155,18 +159,7 @@ function update_length(location) {
 #   prev - the previous tail coordinates
 # ===
 function update_tail(prev) {
-    # TODO: change to a switch
-    if (player["direction"] == "w")
-        player["tail"] = prev[1]+1 "," prev[2]
-    if (player["direction"] == "s") 
-        player["tail"] = prev[1]-1 "," prev[2]
-    if (player["direction"] == "a")
-        player["tail"] = prev[1] "," prev[2]-1
-    if (player["direction"] == "d")
-        player["tail"] = prev[1] "," prev[2]+1
 
-    if (player["length"] == 0)
-        player["tail"] = player["x"] "," player["y"]
 }
 
 # ===
