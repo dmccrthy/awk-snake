@@ -31,6 +31,7 @@ BEGIN {
     # player is an array that tracks 
     player["x"] = 5
     player["y"] = 10
+    player["direction"] = "w"
     player["length"] = 0
 
     generate_fruit(fruit)
@@ -40,34 +41,40 @@ BEGIN {
 
     # main event loop
     for (;;) {
+        # input is read continuosly every half second
         input = get_input()
 
-        if (input ~ "[wasd]") {
-            # previous location needs to be tracked so we can update MAP
-            x = player["x"]
-            y = player["y"]
+        # previous location needs to be tracked so we can update MAP
+        x = player["x"]
+        y = player["y"]
 
-            if (input == "w")
-                player["x"]--
-            if (input == "s") 
-                player["x"]++
-            if (input == "a")
-                player["y"]--
-            if (input == "d")
-                player["y"]++
+        # if there is no input we just want to continue in the current direction
+        if (input == "") {
+            input = player["direction"]
+        } else {
+            player["direction"] = input
+        }
 
-            # check_collision()
+        if (input == "w")
+            player["x"]--
+        if (input == "s") 
+            player["x"]++
+        if (input == "a")
+            player["y"]--
+        if (input == "d")
+            player["y"]++
 
-            if (player["x"] == fruit["x"] && player["y"] == fruit["y"]) {
-                update_length(x, y)
-                generate_fruit(fruit)
-            } else {
-                MAP[x, y] = 1
-                enqueue(x, y)
+        check_collision()
 
-                dequeue()
-                MAP[QUEUE_TMP[1], QUEUE_TMP[2]] = 0
-            }
+        if (player["x"] == fruit["x"] && player["y"] == fruit["y"]) {
+            update_length(x, y)
+            generate_fruit(fruit)
+        } else {
+            MAP[x, y] = 1
+            enqueue(x, y)
+
+            dequeue()
+            MAP[QUEUE_TMP[1], QUEUE_TMP[2]] = 0
         }
 
         # Exit gracefully (so that END is run)
@@ -114,7 +121,8 @@ function debug(var1, var2) {
 # character and returns it (this is used to handle player movement)
 # ===
 function get_input() {
-    command = "read -n 1; echo $REPLY" 
+    # this is read with a timeout (-t so we trigger an input every half second)
+    command = "read -t 0.5 -n 1; echo $REPLY" 
     command | getline input
     close(command)
 
@@ -123,6 +131,7 @@ function get_input() {
 
 # ===
 # Update position of cursor using ANSI escape sequences.
+# Updates with offset so we don't delete header.
 #
 # Parameters:
 #   x - Row of cursor
@@ -130,17 +139,6 @@ function get_input() {
 # ===
 function update_cursor(x, y) {
     return "\x1b[" x+GRID_OFFSET ";" y "H"
-}
-
-# ===
-# Regenerate the fruit at a random location within the map.
-#
-# Parameters:
-#   fruit - the fruit object (with x/y coords)
-# ===
-function generate_fruit(fruit) {
-    fruit["x"] = int(rand() * 10)
-    fruit["y"] = int(rand() * 10)
 }
 
 # ===
@@ -153,13 +151,28 @@ function update_length(x, y) {
 }
 
 # ===
-#
+# Regenerate the fruit at a random location within the map.
 #
 # Parameters:
-#   prev - the previous tail coordinates
+#   fruit - the fruit object (with x/y coords)
 # ===
-function update_tail(prev) {
+function generate_fruit(fruit) {
+    fruit["x"] = int(rand() * 10)
+    fruit["y"] = int(rand() * 10)
 
+    # regenerate fruit if the snake is on that tile
+    if (MAP[fruit["x"],fruit["y"]] == 1) {
+        generate_fruit()
+    }
+}
+
+# ===
+#
+# ===
+function check_collision() {
+    if (MAP[player["x"],player["y"]] == 1) {
+        exit
+    }
 }
 
 # ===
