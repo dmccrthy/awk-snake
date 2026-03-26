@@ -15,9 +15,10 @@ BEGIN {
     print "\x1b[?25l" 
     print "\x1b[0;0H\x1b[J" "PRESS 'q' TO EXIT ---- WASD TO MOVE"
 
-    #
+    # Global variables define size of grid/offset on screen
+    # this could be updated to use the terminal size (but for now doing this statically works)
     GRID_HEIGHT = 10
-    GRID_WIDTH = 20
+    GRID_WIDTH = 25
     GRID_OFFSET = 3
 
     # QUEUE is a global var that tracks coordinates of the players tail segments
@@ -41,7 +42,7 @@ BEGIN {
 
     # main event loop
     for (;;) {
-        # input is read continuosly every half second
+        # input is read continuously every half second
         input = get_input()
 
         # previous location needs to be tracked so we can update MAP
@@ -98,17 +99,11 @@ function init_grid(grid) {
 function enqueue(x, y) {
     QUEUE[QUEUE_START] = x "," y
     QUEUE_START++
-
-    # debug(x, y)
 }
 
 function dequeue() {
     split(QUEUE[QUEUE_END], QUEUE_TMP, ",")
     delete QUEUE[QUEUE_END++]
-
-    debug(QUEUE_TMP[1] QUEUE_TMP[2])
-
-    #
 }
 
 function debug(var1, var2) {
@@ -122,7 +117,7 @@ function debug(var1, var2) {
 # ===
 function get_input() {
     # this is read with a timeout (-t so we trigger an input every half second)
-    command = "read -t 0.5 -n 1; echo $REPLY" 
+    command = "read -s -t 0.5 -n 1; echo $REPLY" 
     command | getline input
     close(command)
 
@@ -138,7 +133,9 @@ function get_input() {
 #   y - Column of cursor
 # ===
 function update_cursor(x, y) {
-    return "\x1b[" x+GRID_OFFSET ";" y "H"
+    # x is offset by GRID_OFFSET to fit the header message
+    # y is offset by 1 as terminal columns start at 1 and we want to begin at 0
+    return "\x1b[" x+GRID_OFFSET ";" y+1 "H"
 }
 
 # ===
@@ -170,7 +167,14 @@ function generate_fruit(fruit) {
 #
 # ===
 function check_collision() {
-    if (MAP[player["x"],player["y"]] == 1) {
+    # based on player x/y we can check if there in bounds
+    out_of_bounds = player["x"] == 0 ||
+        player["x"] == GRID_HEIGHT ||
+        player["y"] == 0 ||
+        player["y"] == GRID_WIDTH
+
+    # if they exit the bounds (or hit themselves) the program exits and END is run
+    if (MAP[player["x"],player["y"]] == 1 || out_of_bounds) {
         exit
     }
 }
@@ -187,7 +191,9 @@ function render_screen() {
 
         move_cursor = update_cursor(row, column)
 
-        if (row == player["x"] && column == player["y"]) {
+        if (row == 0 || column == 0 || row == GRID_HEIGHT || column == GRID_WIDTH) {
+            print move_cursor "#"
+        } else if (row == player["x"] && column == player["y"]) {
             print move_cursor "O"
         } else if (MAP[row,column] == 1) {
             print move_cursor "o"
@@ -202,6 +208,11 @@ function render_screen() {
 }
 
 END {
-    # clear screen/enable terminal cursor
-    print "\x1b[J\x1b[?25h"
+    # Print ending message once game has ended
+    print "\x1b[" GRID_HEIGHT + GRID_OFFSET ";0H\n"
+    print "GAME OVER!\n"
+    print "Final Score: " player["length"]
+
+    # enable terminal cursor
+    print "\x1b[?25h"
 }
