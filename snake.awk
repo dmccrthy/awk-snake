@@ -12,13 +12,19 @@
 
 BEGIN {
     # disable terminal cursor and print header messages
-    print "\x1b[?25l" 
-    print "\x1b[0;0H\x1b[J" "PRESS 'q' TO EXIT ---- WASD TO MOVE"
+    print "\x1b[?25l\x1b[2J" 
+
+
+    # Display title screen (before loading real game)
+    display_title()
+
+    # 
+    print "\x1b[H" "'Q' TO EXIT ---- 'WASD' TO MOVE"
 
     # Global variables define size of grid/offset on screen
     # this could be updated to use the terminal size (but for now doing this statically works)
-    GRID_HEIGHT = 10
-    GRID_WIDTH = 25
+    GRID_HEIGHT = 15
+    GRID_WIDTH = 30
     GRID_OFFSET = 3
 
     # QUEUE is a global var that tracks coordinates of the players tail segments
@@ -88,6 +94,38 @@ BEGIN {
 # ===
 #
 # ===
+function display_title() {
+    # Title text is ASCII so chars like \ need to be escaped
+    # This looks extremely ugly, but there isn't a good way to do this.
+    print"\x1b[1;30H\n" \
+" ______     __     __     __  __    \n" \
+"/\\  __ \\   /\\ \\  _ \\ \\   /\\ \\/ /   \n" \
+"\\ \\  __ \\  \\ \\ \\/ \".\\ \\  \\ \\  _\"-.   \n" \
+" \\ \\_\\ \\_\\  \\ \\__/\".~\\_\\  \\ \\_\\ \\_\\\n" \
+"  \\/_/\\/_/   \\/_/   \\/_/   \\/_/\\/_/     \n" \
+"  \n" \
+" ______     __   __     ______     __  __     ______    \n" \
+"/\\  ___\\   /\\ \"-.\\ \\   /\\  __ \\   /\\ \\/ /    /\\  ___\\  \n" \
+"\\ \\___  \\  \\ \\ \\-.  \\  \\ \\  __ \\  \\ \\  _\"-.  \\ \\  __\\   \n" \
+" \\/\\_____\\  \\ \\_\\\\\"\\_\\  \\ \\_\\ \\_\\  \\ \\_\\ \\_\\  \\ \\_____\\ \n" \
+"  \\/_____/   \\/_/ \\/_/   \\/_/\\/_/   \\/_/\\/_/   \\/_____/  "
+
+    print "\x1b[2B\x1b[12C\x1b[47;30mPRESS ANY KEY TO CONTINUE\x1b[0m"
+
+
+    # await user input
+    command = "read -s -n 1" 
+    command | getline TMP
+    close(command)
+
+    # clear screen
+    print "\x1b[2J"
+
+}
+
+# ===
+#
+# ===
 function init_grid(grid) {
     for (i = 0; i <= GRID_HEIGHT; i++) {
         for (j = 0; j <= GRID_WIDTH; j++) {
@@ -106,18 +144,13 @@ function dequeue() {
     delete QUEUE[QUEUE_END++]
 }
 
-function debug(var1, var2) {
-    print "\x1b[" LINE_ROW ";30H" var1 " " var2
-    LINE_ROW++
-}
-
 # ===
 # Read and return input from stdin. This reads the next input 
 # character and returns it (this is used to handle player movement)
 # ===
 function get_input() {
     # this is read with a timeout (-t so we trigger an input every half second)
-    command = "read -s -t 0.5 -n 1; echo $REPLY" 
+    command = "read -s -t 0.35 -n 1; echo $REPLY" 
     command | getline input
     close(command)
 

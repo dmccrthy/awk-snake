@@ -1,5 +1,7 @@
 # Snake (written in AWK)
 
+![game.gif](./assets/game.gif)
+
 This project is my take on a terminal-based snake game in the AWK programming language. This isn't intended to be very practical (given the language it was written in), but it does show how AWK can be used for more than just basic text processing. 
 
 ## Requirements
