@@ -55,20 +55,19 @@ BEGIN {
         x = player["x"]
         y = player["y"]
 
-        # if there is no input we just want to continue in the current direction
-        if (input == "") {
-            input = player["direction"]
-        } else {
+        # update player direction if input is perpendicular to current direction
+        if ((player["direction"] ~ "[ws]" && input ~ "[ad]") || (player["direction"] ~ "[ad]" && input ~ "[ws]")) {
             player["direction"] = input
         }
 
-        if (input == "w")
+        # update position based on player direction
+        if (player["direction"] == "w")
             player["x"]--
-        if (input == "s") 
+        if (player["direction"] == "s") 
             player["x"]++
-        if (input == "a")
+        if (player["direction"] == "a")
             player["y"]--
-        if (input == "d")
+        if (player["direction"] == "d")
             player["y"]++
 
         check_collision()
@@ -77,6 +76,7 @@ BEGIN {
             update_length(x, y)
             generate_fruit(fruit)
         } else {
+            #
             MAP[x, y] = 1
             enqueue(x, y)
 
