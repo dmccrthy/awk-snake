@@ -13,12 +13,11 @@
 BEGIN {
     # disable terminal cursor and print header messages
     print "\x1b[?25l\x1b[2J" 
-
+    srand()
 
     # Display title screen (before loading real game)
     display_title()
 
-    # 
     print "\x1b[H" "'Q' TO EXIT ---- 'WASD' TO MOVE"
 
     # Global variables define size of grid/offset on screen
@@ -76,7 +75,8 @@ BEGIN {
             update_length(x, y)
             generate_fruit(fruit)
         } else {
-            #
+            # Coordinates of the players taill is added to QUEUE.
+            # When moving we add the new position and remove the end
             MAP[x, y] = 1
             enqueue(x, y)
 
@@ -91,13 +91,10 @@ BEGIN {
     }
 }
 
-# ===
-#
-# ===
 function display_title() {
     # Title text is ASCII so chars like \ need to be escaped
     # This looks extremely ugly, but there isn't a good way to do this.
-    print"\x1b[1;30H\n" \
+    print"\x1b[2;30H\n" \
 " ______     __     __     __  __    \n" \
 "/\\  __ \\   /\\ \\  _ \\ \\   /\\ \\/ /   \n" \
 "\\ \\  __ \\  \\ \\ \\/ \".\\ \\  \\ \\  _\"-.   \n" \
@@ -110,7 +107,8 @@ function display_title() {
 " \\/\\_____\\  \\ \\_\\\\\"\\_\\  \\ \\_\\ \\_\\  \\ \\_\\ \\_\\  \\ \\_____\\ \n" \
 "  \\/_____/   \\/_/ \\/_/   \\/_/\\/_/   \\/_/\\/_/   \\/_____/  "
 
-    print "\x1b[2B\x1b[12C\x1b[47;30mPRESS ANY KEY TO CONTINUE\x1b[0m"
+    print "\x1b[2B\x1b[13CCreated By: Dan McCarthy\x1b[0m"
+    print "\x1b[1B\x1b[13C\x1b[47;30mPRESS ANY KEY TO CONTINUE\x1b[0m"
 
 
     # await user input
@@ -124,7 +122,8 @@ function display_title() {
 }
 
 # ===
-#
+# Populates a 2D array with 0's. Indices represent the board
+# and are updated to 1 when the snake is in them.
 # ===
 function init_grid(grid) {
     for (i = 0; i <= GRID_HEIGHT; i++) {
@@ -164,6 +163,9 @@ function get_input() {
 # Parameters:
 #   x - Row of cursor
 #   y - Column of cursor
+#
+# Returns:
+#   escape sequence - String containing ANSI escape
 # ===
 function update_cursor(x, y) {
     # x is offset by GRID_OFFSET to fit the header message
@@ -172,7 +174,7 @@ function update_cursor(x, y) {
 }
 
 # ===
-#
+# Increase the snakes length and update tail position in the MAP.
 # ===
 function update_length(x, y) {
     player["length"]++
@@ -187,17 +189,13 @@ function update_length(x, y) {
 #   fruit - the fruit object (with x/y coords)
 # ===
 function generate_fruit(fruit) {
-    fruit["x"] = int(rand() * 10)
-    fruit["y"] = int(rand() * 10)
-
-    # regenerate fruit if the snake is on that tile
-    if (MAP[fruit["x"],fruit["y"]] == 1) {
-        generate_fruit()
-    }
+    fruit["x"] = int(rand() * 10) + 1
+    fruit["y"] = int(rand() * 10) + 1
 }
 
 # ===
-#
+# Checks collisions based on player location. If the player
+# is in the wall or inside itself the program will trigger END.
 # ===
 function check_collision() {
     # based on player x/y we can check if there in bounds
@@ -213,11 +211,13 @@ function check_collision() {
 }
 
 # ===
-#
+# Handle rerendering the screen when called. Loops over the
+# MAP and fills in the snake, regular tiles, and fruit.
 # ===
 function render_screen() {
     for(position in MAP) {
-        #
+        # Have to split up the data of the 2d array (since AWK is weird)
+        # explanation here: https://www.gnu.org/software/gawk/manual/html_node/Multiscanning.html
         split(position, coords, SUBSEP)
         row = coords[1]
         column = coords[2]
@@ -235,7 +235,6 @@ function render_screen() {
         }
     }
 
-    #
     print update_cursor(player["x"], player["y"]) "O"
     print update_cursor(fruit["x"], fruit["y"]) "*"
 }
