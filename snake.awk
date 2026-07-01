@@ -15,6 +15,15 @@ BEGIN {
     print "\x1b[?25l\x1b[2J" 
     srand()
 
+    # ANSI escape sequences
+    ANSI["red"] = "\x1b[31m"
+    ANSI["green"] = "\x1b[32m"
+    ANSI["yellow"] = "\x1b[33m"
+    ANSI["blue"] = "\x1b[34m"
+    ANSI["magenta"] = "\x1b[35m"
+    ANSI["cyan"] = "\x1b[36m"
+    ANSI["reset"] = "\x1b[0m"
+
     # Game configuration
     TICK_SPEED = 0.3
 
@@ -98,29 +107,50 @@ function display_title() {
     # Title text is ASCII so chars like \ need to be escaped
     # This looks extremely ugly, but there isn't a good way to do this.
     print"\x1b[2;30H\n" \
-"                           oooo\n" \
-"                           `888\n" \
-".oooo.   oooo oooo    ooo   888  oooo\n" \
-"`P  )88b   `88. `88.  .8'   888 .8P'\n" \
-" .oP\"888    `88..]88..8'    888888.\n" \
-"d8(  888     `888'`888'     888 `88b.\n" \
-"`Y888\"\"8o     `8'  `8'     o888o o888o\n" \
-"\n" \
-"                               oooo\n" \
-"                               `888\n" \
-" .oooo.o ooo. .oo.    .oooo.    888  oooo   .ooooo.\n" \
-"d88(  \"8 `888P\"Y88b  `P  )88b   888 .8P'   d88' `88b\n" \
-"`\"Y88b.   888   888   .oP\"888   888888.    888ooo888\n" \
-"o.  )88b  888   888  d8(  888   888 `88b.  888    .o\n" \
-"8\"\"888P' o888o o888o `Y888\"\"8o o888o o888o `Y8bod8P'"
+"                            oooo\n" \
+"                            `888\n" \
+" .oooo.   oooo oooo    ooo   888  oooo\n" \
+" `P  )88b   `88. `88.  .8'   888 .8P'\n" \
+"  .oP\"888    `88..]88..8'    888888.\n" \
+" d8(  888     `888'`888'     888 `88b.\n" \
+" `Y888\"\"8o     `8'  `8'     o888o o888o\n" \
+" \n" \
+"                                oooo\n" \
+"                                `888\n" \
+"  .oooo.o ooo. .oo.    .oooo.    888  oooo   .ooooo.\n" \
+" d88(  \"8 `888P\"Y88b  `P  )88b   888 .8P'   d88' `88b\n" \
+" `\"Y88b.   888   888   .oP\"888   888888.    888ooo888\n" \
+" o.  )88b  888   888  d8(  888   888 `88b.  888    .o\n" \
+" 8\"\"888P' o888o o888o `Y888\"\"8o o888o o888o `Y8bod8P'"
 
-    print "\x1b[2B\x1b[13CCreated By: Dan McCarthy\x1b[0m"
-    print "\x1b[1B\x1b[13C\x1b[47;30mPRESS ANY KEY TO CONTINUE\x1b[0m"
+    # Save position after the art for the color cycling loop
+    print "\x1b[s"
 
-    command = "read -s -n 1" 
-    command | getline TMP
-    close(command)
+    color_cycle[1] = ANSI["red"]
+    color_cycle[2] = ANSI["yellow"]
+    color_cycle[3] = ANSI["green"]
+    color_cycle[4] = ANSI["cyan"]
+    color_cycle[5] = ANSI["blue"]
+    color_cycle[6] = ANSI["magenta"]
+    ci = 1
 
+    for (;;) {
+        print "\x1b[u"
+        c = color_cycle[ci]
+
+        print "\x1b[2B\x1b[13C" c "Created By: Dan McCarthy" ANSI["reset"]
+        print "\x1b[1B\x1b[13C" c "PRESS ANY KEY TO CONTINUE" ANSI["reset"]
+
+        command = "read -s -t " TICK_SPEED " -n 1; echo $REPLY"
+        command | getline TMP
+        close(command)
+
+        if (TMP != "") break
+
+        ci = ci % 6 + 1
+    }
+
+    # clear screen
     print "\x1b[2J"
 
 }
@@ -235,18 +265,18 @@ function render_screen() {
         move_cursor = update_cursor(row, column)
 
         if (row == 0 || column == 0 || row == GRID_HEIGHT || column == GRID_WIDTH) {
-            print move_cursor "#"
+            print move_cursor ANSI["blue"] "#" ANSI["reset"]
         } else if (row == player["x"] && column == player["y"]) {
-            print move_cursor "O"
+            print move_cursor ANSI["green"] "O" ANSI["reset"]
         } else if (MAP[row,column] == 1) {
-            print move_cursor "o"
+            print move_cursor ANSI["yellow"] "o" ANSI["reset"]
         } else {
             print move_cursor "_"
         }
     }
 
-    print update_cursor(player["x"], player["y"]) "O"
-    print update_cursor(fruit["x"], fruit["y"]) "*"
+    print update_cursor(player["x"], player["y"]) ANSI["green"] "O" ANSI["reset"]
+    print update_cursor(fruit["x"], fruit["y"]) ANSI["red"] "*" ANSI["reset"]
 }
 
 END {
