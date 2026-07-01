@@ -15,6 +15,9 @@ BEGIN {
     print "\x1b[?25l\x1b[2J" 
     srand()
 
+    # Game configuration
+    TICK_SPEED = 0.3
+
     # Display title screen (before loading real game)
     display_title()
 
@@ -95,28 +98,29 @@ function display_title() {
     # Title text is ASCII so chars like \ need to be escaped
     # This looks extremely ugly, but there isn't a good way to do this.
     print"\x1b[2;30H\n" \
-" ______     __     __     __  __    \n" \
-"/\\  __ \\   /\\ \\  _ \\ \\   /\\ \\/ /   \n" \
-"\\ \\  __ \\  \\ \\ \\/ \".\\ \\  \\ \\  _\"-.   \n" \
-" \\ \\_\\ \\_\\  \\ \\__/\".~\\_\\  \\ \\_\\ \\_\\\n" \
-"  \\/_/\\/_/   \\/_/   \\/_/   \\/_/\\/_/     \n" \
-"  \n" \
-" ______     __   __     ______     __  __     ______    \n" \
-"/\\  ___\\   /\\ \"-.\\ \\   /\\  __ \\   /\\ \\/ /    /\\  ___\\  \n" \
-"\\ \\___  \\  \\ \\ \\-.  \\  \\ \\  __ \\  \\ \\  _\"-.  \\ \\  __\\   \n" \
-" \\/\\_____\\  \\ \\_\\\\\"\\_\\  \\ \\_\\ \\_\\  \\ \\_\\ \\_\\  \\ \\_____\\ \n" \
-"  \\/_____/   \\/_/ \\/_/   \\/_/\\/_/   \\/_/\\/_/   \\/_____/  "
+"                           oooo\n" \
+"                           `888\n" \
+".oooo.   oooo oooo    ooo   888  oooo\n" \
+"`P  )88b   `88. `88.  .8'   888 .8P'\n" \
+" .oP\"888    `88..]88..8'    888888.\n" \
+"d8(  888     `888'`888'     888 `88b.\n" \
+"`Y888\"\"8o     `8'  `8'     o888o o888o\n" \
+"\n" \
+"                               oooo\n" \
+"                               `888\n" \
+" .oooo.o ooo. .oo.    .oooo.    888  oooo   .ooooo.\n" \
+"d88(  \"8 `888P\"Y88b  `P  )88b   888 .8P'   d88' `88b\n" \
+"`\"Y88b.   888   888   .oP\"888   888888.    888ooo888\n" \
+"o.  )88b  888   888  d8(  888   888 `88b.  888    .o\n" \
+"8\"\"888P' o888o o888o `Y888\"\"8o o888o o888o `Y8bod8P'"
 
     print "\x1b[2B\x1b[13CCreated By: Dan McCarthy\x1b[0m"
     print "\x1b[1B\x1b[13C\x1b[47;30mPRESS ANY KEY TO CONTINUE\x1b[0m"
 
-
-    # await user input
     command = "read -s -n 1" 
     command | getline TMP
     close(command)
 
-    # clear screen
     print "\x1b[2J"
 
 }
@@ -148,8 +152,14 @@ function dequeue() {
 # character and returns it (this is used to handle player movement)
 # ===
 function get_input() {
-    # this is read with a timeout (-t so we trigger an input every half second)
-    command = "read -s -t 0.35 -n 1; echo $REPLY" 
+    # Wait the full tick, then drain the entire input buffer
+    # keeping only the most recently pressed key
+    command = \
+"sleep " TICK_SPEED "; " \
+"while read -s -t 0.001 -n 1 CHAR 2>/dev/null; do " \
+"  LAST=\"$CHAR\"" \
+"; done; " \
+"echo \"$LAST\""
     command | getline input
     close(command)
 
