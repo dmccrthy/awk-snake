@@ -230,8 +230,10 @@ function update_length(x, y) {
 #   fruit - the fruit object (with x/y coords)
 # ===
 function generate_fruit(fruit) {
-    fruit["x"] = int(rand() * 10) + 1
-    fruit["y"] = int(rand() * 10) + 1
+    do {
+        fruit["x"] = int(rand() * 10) + 1
+        fruit["y"] = int(rand() * 10) + 1
+    } while (MAP[fruit["x"], fruit["y"]] == 1)
 }
 
 # ===
