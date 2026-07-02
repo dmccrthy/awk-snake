@@ -12,6 +12,7 @@
 
 BEGIN {
     # disable terminal cursor and print header messages
+    system("stty -echo")
     print "\x1b[?25l\x1b[2J" 
     srand()
 
@@ -286,5 +287,6 @@ END {
     print "Final Score: " player["length"]
 
     # enable terminal cursor
+    system("stty echo")
     print "\x1b[?25h"
 }
