@@ -142,7 +142,7 @@ function display_title() {
         print "\x1b[2B\x1b[13C" c "Created By: Dan McCarthy" ANSI["reset"]
         print "\x1b[1B\x1b[13C" c "PRESS ANY KEY TO CONTINUE" ANSI["reset"]
 
-        command = "read -s -t " TICK_SPEED " -n 1; echo $REPLY"
+        command = "bash -c 'read -s -t " TICK_SPEED " -n 1; echo $REPLY'"
         command | getline TMP
         close(command)
 
@@ -184,13 +184,7 @@ function dequeue() {
 # ===
 function get_input() {
     # Wait the full tick, then drain the entire input buffer
-    # keeping only the most recently pressed key
-    command = \
-"sleep " TICK_SPEED "; " \
-"while read -s -t 0.001 -n 1 CHAR 2>/dev/null; do " \
-"  LAST=\"$CHAR\"" \
-"; done; " \
-"echo \"$LAST\""
+    command = "bash -c 'sleep " TICK_SPEED "; while read -s -t 0.001 -n 1 CHAR 2>/dev/null; do  LAST=\"$CHAR\"; done; echo \"$LAST\"'"
     command | getline input
     close(command)
 
